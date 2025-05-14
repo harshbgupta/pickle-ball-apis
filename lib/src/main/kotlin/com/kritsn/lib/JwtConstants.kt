@@ -1,4 +1,4 @@
-package com.kritsn.gateway.security
+package com.kritsn.lib
 
 /**
  * Copyright © 2025 Kritsn LLP. All rights reserved.

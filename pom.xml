@@ -16,10 +16,11 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
+        <module>lib</module>
+        <module>discovery-server-pb</module>
         <module>gateway-pb</module>
         <module>user-apis-pb</module>
         <module>booking-apis-pb</module>
-        <module>discovery-server-pb</module>
     </modules>
 
     <developers>
