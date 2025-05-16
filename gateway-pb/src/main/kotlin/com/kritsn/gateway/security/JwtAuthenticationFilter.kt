@@ -1,11 +1,10 @@
 package com.kritsn.gateway.security
 
-import com.kritsn.lib.*
+import com.kritsn.lib.jwt.*
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.AbstractAuthenticationToken
@@ -25,6 +24,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 //@Order(Ordered.HIGHEST_PRECEDENCE)
 class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilter() {
+    private val loggerr = LoggerFactory.getLogger(JwtAuthenticationFilter::class.java)
     private val excludedPaths = listOf(
         "$URL_PREFIX_PUBLIC/**",
         "$URL_PREFIX_OPEN/**",
@@ -33,7 +33,12 @@ class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilt
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val requestPath = request.requestURI
-        return excludedPaths.any { path -> requestPath.startsWith(path) }
+        val isExcludedPath = excludedPaths.any { path ->
+            val regex = path.replace("**", ".*").toRegex()
+            requestPath.matches(regex)
+        }
+        val status = isExcludedPath && request.method == "POST"
+        return status
     }
 
     override fun doFilterInternal(
@@ -41,26 +46,37 @@ class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilt
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
+        loggerr.info("Incoming request: method=${request.method}, URI=${request.requestURI}, Content-Type=${request.contentType}")
+
+        // 1. Just checking if are these are public (open, token, public) end paths
         val requestURI = request.requestURI
         if (requestURI.startsWith(URL_PREFIX_OPEN)
             || requestURI.startsWith(URL_PREFIX_PUBLIC)
             || requestURI.startsWith(URL_PREFIX_TOKEN)
         ) {
-            filterChain.doFilter(request, response)
+            try {
+                // Allowing public (open, token, public) end paths as they will not have headers
+                filterChain.doFilter(request, response)
+            } catch (e: Exception) {
+                loggerr.error("Error during filter chain processing: ${e.message}", e)
+                sendErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR, "An internal error occurred")
+            }
             return
         }
-        val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
-        if (authHeader == null || !authHeader.startsWith(BEARER)) {
+
+        // Authenticating NOT public end paths and they MUST have headers
+        val tokenWithBearer = request.getHeader(HttpHeaders.AUTHORIZATION)
+        if (tokenWithBearer == null || !tokenWithBearer.startsWith(BEARER)) {
             sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header")
             return
         }
-        val token = authHeader.substringAfter(BEARER)
+
         try {
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.validateToken(tokenWithBearer)) {
                 sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Token expired or invalid")
                 return
             }
-            val claims = jwtUtil.getClaimsFromToken(token)
+            val claims = jwtUtil.getClaimsFromToken(tokenWithBearer)
             val mobileNumber = claims[MOBILE_NUMBER] as String
 //            request.setAttribute(MOBILE_NUMBER, mobileNumber)
             val authentication = JwtAuthenticationToken(mobileNumber)
@@ -95,5 +111,5 @@ class JwtAuthenticationEntryPoint : AuthenticationEntryPoint {
 fun sendErrorResponse(response: HttpServletResponse, status: HttpStatus, message: String) {
     response.status = status.value()
     response.contentType = "application/json"
-    response.writer.write("""{"code": ${status.value()}, "message": "$message"}""")
+    response.writer.write("""{"success":false,"code": ${status.value()},"message": "$message","timestamp":${System.currentTimeMillis()}}""")
 }

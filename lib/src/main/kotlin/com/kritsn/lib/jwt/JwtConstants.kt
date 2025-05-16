@@ -1,4 +1,4 @@
-package com.kritsn.lib
+package com.kritsn.lib.jwt
 
 /**
  * Copyright © 2025 Kritsn LLP. All rights reserved.

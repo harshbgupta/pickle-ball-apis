@@ -1,10 +1,10 @@
 package com.kritsn.gateway.security.config
 
 import com.kritsn.gateway.security.*
-import com.kritsn.lib.JwtUtil
-import com.kritsn.lib.URL_PREFIX_OPEN
-import com.kritsn.lib.URL_PREFIX_PUBLIC
-import com.kritsn.lib.URL_PREFIX_TOKEN
+import com.kritsn.lib.jwt.JwtUtil
+import com.kritsn.lib.jwt.URL_PREFIX_OPEN
+import com.kritsn.lib.jwt.URL_PREFIX_PUBLIC
+import com.kritsn.lib.jwt.URL_PREFIX_TOKEN
 //import com.kritsn.gateway.security.JwtUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean

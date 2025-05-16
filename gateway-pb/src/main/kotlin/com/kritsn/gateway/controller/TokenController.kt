@@ -1,8 +1,10 @@
 package com.kritsn.gateway.controller
 
+import com.kritsn.gateway.TokenService
 import com.kritsn.gateway.model.ReqUser
-import com.kritsn.lib.BEARER
-import com.kritsn.lib.JwtUtil
+import com.kritsn.lib.base.Response
+import com.kritsn.lib.base.buildSuccessResponse
+import com.kritsn.lib.jwt.JwtUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
@@ -18,24 +20,21 @@ class TokenController {
 
     @Autowired
     lateinit var jwtUtil: JwtUtil
+    @Autowired
+    lateinit var tokenService: TokenService
 
     @GetMapping("/dummy")
-    private fun dummyApi(): String {
-        return "this is a dummy api"
+    private fun dummyApi(): Response<String> {
+        return buildSuccessResponse()
     }
 
-    @PostMapping("/create")
-    private fun createNewToken(@RequestPart reqUser: ReqUser): String {
-        return jwtUtil.generateToken(reqUser.mobileNumber)
+    @PostMapping("/create", consumes = ["application/json"], produces = ["application/json"])
+    private fun createNewToken(@RequestBody reqUser: ReqUser): Response<String> {
+        return tokenService.handleGenerateToken(reqUser.mobileNumber)
     }
 
     @PostMapping("/refresh")
-    fun refreshToken(@RequestHeader("Authorization") token: String): Map<String, String> {
-        val actualToken = token.substringAfter(BEARER)
-        if (!jwtUtil.validateToken(actualToken)) {
-            throw IllegalArgumentException("Invalid or expired token")
-        }
-        val newToken = jwtUtil.refreshToken(actualToken)
-        return mapOf("token" to newToken)
+    fun refreshToken(@RequestHeader("Authorization") token: String?): Response<String> {
+        return tokenService.handleRefreshToken(token)
     }
 }

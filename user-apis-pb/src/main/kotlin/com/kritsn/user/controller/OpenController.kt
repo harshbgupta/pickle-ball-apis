@@ -1,6 +1,6 @@
 package com.kritsn.user.controller
 
-import com.kritsn.user.base.Response
+import com.kritsn.lib.base.Response
 import com.kritsn.user.service.UserService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,7 +16,7 @@ class OpenController {
     lateinit var userService: UserService
 
     @GetMapping("/user/exist/{mobileNumber}")
-    fun checkUserExistence(@PathVariable("mobileNumber") mobileNumber:String?):Response<Boolean>{
+    fun checkUserExistence(@PathVariable("mobileNumber") mobileNumber:String?): Response<Boolean> {
         return userService.checkUserExistence(mobileNumber)
     }
 

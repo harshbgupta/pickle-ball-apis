@@ -22,9 +22,9 @@ class Response<T> {
     var data: T? = null
 }
 
-fun <T> createSuccessResponse(data: T? = null): Response<T> {
+fun <T> buildSuccessResponse(data: T? = null, code: HttpStatus? = null): Response<T> {
     val response = Response<T>()
-    response.code = HttpStatus.OK.value()
+    response.code = code?.value() ?: HttpStatus.OK.value()
     response.success = true
     response.message = MESSAGE_SUCCESS
     response.timestamp = System.currentTimeMillis()
@@ -32,7 +32,7 @@ fun <T> createSuccessResponse(data: T? = null): Response<T> {
     return response
 }
 
-fun <T> createCustomResponse(
+fun <T> buildCustomResponse(
     httpStatus: HttpStatus?,
     successful: Boolean?,
     message: String? = null,
@@ -47,7 +47,7 @@ fun <T> createCustomResponse(
     return response
 }
 
-fun <T> createErrorResponse(errorMessage: String?, httpStatus: HttpStatus? = null): Response<T> {
+fun <T> buildErrorResponse(errorMessage: String?, httpStatus: HttpStatus? = null): Response<T> {
     val response = Response<T>()
     response.code = httpStatus?.value() ?: HttpStatus.BAD_REQUEST.value()
     response.success = false
@@ -57,7 +57,7 @@ fun <T> createErrorResponse(errorMessage: String?, httpStatus: HttpStatus? = nul
     return response
 }
 
-fun <T> createServerErrorResponse(e: Throwable? = null): Response<T> {
+fun <T> buildServerErrorResponse(e: Throwable? = null): Response<T> {
     val response = Response<T>()
     response.code = HttpStatus.INTERNAL_SERVER_ERROR.value()
     response.success = false
