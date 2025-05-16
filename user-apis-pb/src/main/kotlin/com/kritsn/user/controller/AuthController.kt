@@ -1,14 +1,18 @@
 package com.kritsn.user.controller
 
+import com.kritsn.lib.base.Response
+import com.kritsn.user.model.ReqUser
+import com.kritsn.user.service.UserService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/user")
 class AuthController {
+
+    @Autowired
+    lateinit var userService: UserService
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -16,6 +20,10 @@ class AuthController {
         return "Its Dummy Api"
     }
 
-    fun sendOtp(){}
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createUser(@RequestBody reqUser: ReqUser): Response<String> {
+        return userService.createUser(reqUser)
+    }
 
 }

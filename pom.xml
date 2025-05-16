@@ -16,10 +16,11 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
+        <module>lib</module>
+        <module>discovery-server-pb</module>
         <module>gateway-pb</module>
         <module>user-apis-pb</module>
         <module>booking-apis-pb</module>
-        <module>discovery-server-pb</module>
     </modules>
 
     <developers>
@@ -72,6 +73,18 @@
 
     <dependencyManagement>
         <dependencies>
+            <!--Tiny Log Starts, adding here so that I do not have to add in submodule one by one-->
+            <dependency>
+                <groupId>org.tinylog</groupId>
+                <artifactId>tinylog-api-kotlin</artifactId>
+                <version>2.6.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.tinylog</groupId>
+                <artifactId>tinylog-impl</artifactId>
+                <version>2.6.2</version>
+            </dependency>
+            <!--Tiny Log Ends-->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
