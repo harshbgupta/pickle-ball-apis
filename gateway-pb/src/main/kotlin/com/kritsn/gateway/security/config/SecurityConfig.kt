@@ -5,10 +5,11 @@ import com.kritsn.lib.jwt.JwtUtil
 import com.kritsn.lib.jwt.URL_PREFIX_OPEN
 import com.kritsn.lib.jwt.URL_PREFIX_PUBLIC
 import com.kritsn.lib.jwt.URL_PREFIX_TOKEN
-//import com.kritsn.gateway.security.JwtUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -21,7 +22,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * @author Radhey (hr-sh)
  * @since May 12, 2025
  */
-@EnableWebSecurity
 @Configuration
 class SecurityConfig {
 
@@ -35,17 +35,18 @@ class SecurityConfig {
     private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint? = null
 
     @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     fun jwtAuthenticationFilter(): JwtAuthenticationFilter {
         return JwtAuthenticationFilter(jwtUtil())
     }
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http.csrf { it.disable() }
+        http
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers("$URL_PREFIX_PUBLIC/**", "$URL_PREFIX_OPEN/**", "$URL_PREFIX_TOKEN/**").permitAll()
                 auth.anyRequest().authenticated()
-            }
+            }.csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter::class.java)
             .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }

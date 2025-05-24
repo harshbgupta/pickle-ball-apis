@@ -43,7 +43,7 @@ class UserService {
         otpKey ?: return buildErrorResponse("otpKey is required.", HttpStatus.BAD_REQUEST)
 
         //verify OTP with same 3rd party service
-        if(!verifyOtpWithThirdParty(mobileNumber, otpKey)){
+        if (!verifyOtpWithThirdParty(mobileNumber, otpKey)) {
             return buildErrorResponse("Invalid OTP.", HttpStatus.UNAUTHORIZED)
         }
         //get auth token
@@ -55,19 +55,19 @@ class UserService {
         return buildSuccessResponse(token)
     }
 
-    private fun verifyOtpWithThirdParty(mobileNumber: String, otpKey: String):Boolean {
+    private fun verifyOtpWithThirdParty(mobileNumber: String, otpKey: String): Boolean {
         //as of now I am verifying the OTP not
         return true
     }
 
-    fun createUser(reqUser: ReqUser): Response<String> {
+    fun createUser(reqUser: ReqUser): Response<User> {
         val user = User().apply {
             firstName = reqUser.firstName
             lastName = reqUser.lastName
             mobileNumber = reqUser.mobileNumber
             email = reqUser.email
         }
-        userRepository.save(user)
-        return buildSuccessResponse()
+        val userFromDB: User = userRepository.save(user)
+        return buildSuccessResponse(userFromDB)
     }
 }

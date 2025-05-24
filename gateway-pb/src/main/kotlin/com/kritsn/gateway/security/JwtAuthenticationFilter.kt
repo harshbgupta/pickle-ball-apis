@@ -1,15 +1,25 @@
 package com.kritsn.gateway.security
 
-import com.kritsn.lib.jwt.*
+import com.kritsn.lib.jwt.JwtUtil
+import com.kritsn.lib.jwt.URL_PREFIX_OPEN
+import com.kritsn.lib.jwt.URL_PREFIX_PUBLIC
+import com.kritsn.lib.jwt.URL_PREFIX_TOKEN
+import io.jsonwebtoken.Claims
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.security.authentication.AbstractAuthenticationToken
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
@@ -22,7 +32,7 @@ import org.springframework.web.filter.OncePerRequestFilter
  * @since May 12, 2025
  */
 @Component
-//@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE)
 class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilter() {
     private val loggerr = LoggerFactory.getLogger(JwtAuthenticationFilter::class.java)
     private val excludedPaths = listOf(
@@ -32,13 +42,9 @@ class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilt
     )
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
-        val requestPath = request.requestURI
-        val isExcludedPath = excludedPaths.any { path ->
-            val regex = path.replace("**", ".*").toRegex()
-            requestPath.matches(regex)
-        }
-        val status = isExcludedPath && request.method == "POST"
-        return status
+        val isExcludedPath = excludedPaths.any { request.servletPath.startsWith(it) }
+        loggerr.info("isExcludedPath: $isExcludedPath ,request url: ${request.servletPath}, request method: ${request.method}")
+        return isExcludedPath
     }
 
     override fun doFilterInternal(
@@ -47,9 +53,8 @@ class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilt
         filterChain: FilterChain
     ) {
         loggerr.info("Incoming request: method=${request.method}, URI=${request.requestURI}, Content-Type=${request.contentType}")
-
         // 1. Just checking if are these are public (open, token, public) end paths
-        val requestURI = request.requestURI
+        val requestURI = request.servletPath
         if (requestURI.startsWith(URL_PREFIX_OPEN)
             || requestURI.startsWith(URL_PREFIX_PUBLIC)
             || requestURI.startsWith(URL_PREFIX_TOKEN)
@@ -63,23 +68,24 @@ class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilt
             }
             return
         }
-
         // Authenticating NOT public end paths and they MUST have headers
         val tokenWithBearer = request.getHeader(HttpHeaders.AUTHORIZATION)
-        if (tokenWithBearer == null || !tokenWithBearer.startsWith(BEARER)) {
-            sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header")
+        loggerr.info("token => $tokenWithBearer")
+        if (tokenWithBearer.isNullOrEmpty()) {
+            sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Missing is null or empty")
             return
         }
 
         try {
-            if (!jwtUtil.validateToken(tokenWithBearer)) {
+            val claims = jwtUtil.validateTokenAndExtractClaims(tokenWithBearer)
+            if (claims == null) {
                 sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Token expired or invalid")
                 return
             }
-            val claims = jwtUtil.getClaimsFromToken(tokenWithBearer)
-            val mobileNumber = claims[MOBILE_NUMBER] as String
+
+            val mobileNumber = claims.subject //claims[MOBILE_NUMBER] as String
 //            request.setAttribute(MOBILE_NUMBER, mobileNumber)
-            val authentication = JwtAuthenticationToken(mobileNumber)
+            val authentication = JwtAuthenticationToken(tokenWithBearer, mobileNumber)
             authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
             SecurityContextHolder.getContext().authentication = authentication
         } catch (e: Exception) {
@@ -92,9 +98,17 @@ class JwtAuthenticationFilter(private val jwtUtil: JwtUtil) : OncePerRequestFilt
 
 }
 
-class JwtAuthenticationToken(private val mobileNumber: String) : AbstractAuthenticationToken(null) {
-    override fun getCredentials(): Any = ""
-    override fun getPrincipal(): Any = mobileNumber
+
+class JwtAuthenticationToken(private val token: String, private val phoneNumber: String) : UsernamePasswordAuthenticationToken(null, null) {
+    override fun getCredentials(): Any? = null
+    override fun getPrincipal(): Any? = null
+
+    fun getToken(): String {
+        return token
+    }
+    fun getPhoneNumber(): String {
+        return phoneNumber
+    }
 }
 
 @Component

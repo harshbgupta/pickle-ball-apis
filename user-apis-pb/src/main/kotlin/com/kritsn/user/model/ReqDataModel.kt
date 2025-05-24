@@ -2,6 +2,7 @@ package com.kritsn.user.model
 
 import com.kritsn.user.dto.User
 
+//for registering User
 data class ReqUser(
     var firstName: String? = null,
     var lastName: String? = null,
@@ -17,3 +18,9 @@ data class ReqUser(
         userType = user.userType
     )
 }
+
+//for verify Otp
+data class ReqVerifyOtp(
+    val mobileNumber: String?,
+    val otpKey: String?,
+)

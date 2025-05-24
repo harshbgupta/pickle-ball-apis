@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.*
 class TokenController {
 
     @Autowired
-    lateinit var jwtUtil: JwtUtil
-    @Autowired
     lateinit var tokenService: TokenService
 
     @GetMapping("/dummy")
@@ -33,7 +31,7 @@ class TokenController {
         return tokenService.handleGenerateToken(reqUser.mobileNumber)
     }
 
-    @PostMapping("/refresh")
+    @GetMapping("/refresh")
     fun refreshToken(@RequestHeader("Authorization") token: String?): Response<String> {
         return tokenService.handleRefreshToken(token)
     }
