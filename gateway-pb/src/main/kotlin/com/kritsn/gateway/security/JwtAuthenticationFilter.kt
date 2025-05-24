@@ -1,5 +1,6 @@
 package com.kritsn.gateway.security
 
+
 import com.kritsn.lib.jwt.JwtUtil
 import com.kritsn.lib.jwt.URL_PREFIX_OPEN
 import com.kritsn.lib.jwt.URL_PREFIX_PUBLIC
